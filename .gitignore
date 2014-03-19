@@ -1,0 +1,15 @@
+/*.suo
+/VoiceServer/obj
+/VoiceServer/bin
+/CB.Conversion/CB.Conversion.vbproj.user
+/CB.Conversion/bin
+/CB.Conversion/obj
+/CB.GestString/obj
+/CB.GestString/bin
+/CB.Interpreters/obj
+/CB.Interpreters/bin
+/CB.Interpreters/*.user
+/CB.Reseaux/obj
+/CB.Reseaux/bin
+/CB.Threading/obj
+/CB.Threading/bin
