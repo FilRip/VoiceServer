@@ -1,0 +1,18 @@
+; Un nom d'identification unique
+name=
+; Liste des phrases reconnaissable (séparées par des virgules)
+phrase=
+; Nom de la classe contenant le code qui sera exécuté
+mainclass=
+; Nom de la méthode à exécuter en premier
+mainmethod=
+; Nom du fichier contenant le script
+scriptFile=
+; Adresse http d'une requête à exécuter (ceci n'a pas besoin de script)
+requetehttp=
+; touche a envoyer
+keypress=
+; Phrase que l'ordinateur répond
+speak=
+; dll chargés en plus (séparées par des virgules)
+referenceassembly=
