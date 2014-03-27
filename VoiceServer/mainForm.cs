@@ -67,7 +67,14 @@ namespace VoiceServer
                 instances.ClassParam.log("Pas de Kinect");
                 instances.ClassParam.log("On passe en mode micro");
                 instances.SpeechSystem.getInstance().speechMicEngine = new System.Speech.Recognition.SpeechRecognitionEngine(new System.Globalization.CultureInfo("fr-FR"));
-                instances.SpeechSystem.getInstance().speechMicEngine.SetInputToDefaultAudioDevice();
+                try
+                {
+                    instances.SpeechSystem.getInstance().speechMicEngine.SetInputToDefaultAudioDevice();
+                }
+                catch (Exception e)
+                {
+                    instances.ClassParam.log("Pas de micro par défaut non plus...");
+                }
             }
             else
             {
@@ -100,7 +107,7 @@ namespace VoiceServer
 
             instances.ClassParam.log("Pret");
 
-            initServeur();
+            //initServeur();
         }
 
         public void initServeur()
