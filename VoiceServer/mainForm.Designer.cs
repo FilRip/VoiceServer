@@ -101,7 +101,7 @@
             // sysTray
             // 
             this.sysTray.Icon = ((System.Drawing.Icon)(resources.GetObject("sysTray.Icon")));
-            this.sysTray.Text = "notifyIcon1";
+            this.sysTray.Text = "Igor";
             this.sysTray.Visible = true;
             this.sysTray.DoubleClick += new System.EventHandler(this.sysTray_DoubleClick);
             // 

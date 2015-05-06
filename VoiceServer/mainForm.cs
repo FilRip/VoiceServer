@@ -29,7 +29,6 @@ namespace VoiceServer
 
         public void init()
         {
-
             instances.ClassParam.timeToWait = 5000;
             instances.SpeechSystem.getInstance().vitesseSyntheseVocale = 1;
             instances.SpeechSystem.getInstance().volumeSyntheseVocale = 100;
@@ -42,9 +41,11 @@ namespace VoiceServer
                         sensor = potentialSensor;
                         break;
                     }
+                    else
+                        throw new Exception("Etat du Kinect non pret : " + potentialSensor.Status.ToString());
                 }
 
-                if (null != sensor)
+                if (sensor != null)
                 {
                     try
                     {
@@ -53,20 +54,23 @@ namespace VoiceServer
                     }
                     catch (IOException)
                     {
-                        instances.ClassParam.log("Some others applications is streaming from the same Kinect sensor");
+                        invokeAddLog("Some others applications is streaming from the same Kinect sensor");
                         sensor = null;
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                instances.ClassParam.log("Pas de Kinect?");
+                invokeAddLog("Pas de Kinect?");
+                invokeAddLog(ex.Message);
             }
 
-            if (null == sensor)
+            if (sensor == null)
             {
-                instances.ClassParam.log("Pas de Kinect");
-                instances.ClassParam.log("On passe en mode micro");
+                if (KinectSensor.KinectSensors.Count==0)
+                    invokeAddLog("Aucun Kinect branché");
+                invokeAddLog("Pas de Kinect");
+                invokeAddLog("On passe en mode micro");
                 instances.SpeechSystem.getInstance().speechMicEngine = new System.Speech.Recognition.SpeechRecognitionEngine(new System.Globalization.CultureInfo("fr-FR"));
                 try
                 {
@@ -74,27 +78,29 @@ namespace VoiceServer
                 }
                 catch (Exception e)
                 {
-                    instances.ClassParam.log("Pas de micro par défaut non plus...");
+                    invokeAddLog("Pas de micro par défaut non plus...");
+                    invokeAddLog(e.Message);
                 }
             }
             else
             {
                 instances.ClassParam.kinect = true;
-                instances.ClassParam.log("Kinect activé");
+                invokeAddLog("Kinect activé");
                 RecognizerInfo ri = GetKinectRecognizer();
 
-                if (null != ri)
+                if (ri != null)
                 {
                     instances.SpeechSystem.getInstance().speechEngine = new SpeechRecognitionEngine(ri.Id);
                     instances.SpeechSystem.getInstance().speechEngine.SetInputToAudioStream(sensor.AudioSource.Start(), new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
                 }
                 else
                 {
-                    instances.ClassParam.log("Pas de système de reconnaissance vocale");
+                    invokeAddLog("Pas de système de reconnaissance vocale");
                 }
             }
-            enableRecognition();
-            instances.ClassParam.log("Charge les plugins");
+
+            if (!enableRecognition()) return;
+            invokeAddLog("Charge les plugins");
             loadPlugins();
 
             if (sensor != null)
@@ -106,7 +112,7 @@ namespace VoiceServer
             instances.SpeechSystem.getInstance().textToSpeech.Volume = instances.SpeechSystem.getInstance().volumeSyntheseVocale;
             instances.SpeechSystem.getInstance().textToSpeech.Speak("Bonjour");
 
-            instances.ClassParam.log("Pret");
+            invokeAddLog("Pret");
 
             //initServeur();
         }
@@ -122,12 +128,26 @@ namespace VoiceServer
             txtNbPlugins.Text = nbPlugins.ToString();
         }
 
-        public void enableRecognition()
+        public bool enableRecognition()
         {
-            if (sensor == null)
+            if ((sensor == null) && (instances.SpeechSystem.getInstance().speechMicEngine != null))
+            {
                 instances.SpeechSystem.getInstance().speechMicEngine.SpeechRecognized += speechMicEngine_SpeechRecognized;
-            else
+                instances.SpeechSystem.getInstance().speechMicEngine.SpeechRecognitionRejected += speechMicEngine_SpeechRecognitionRejected;
+            }
+            else if (instances.SpeechSystem.getInstance().speechEngine != null)
+            {
                 instances.SpeechSystem.getInstance().speechEngine.SpeechRecognized += SpeechRecognized;
+                instances.SpeechSystem.getInstance().speechEngine.SpeechRecognitionRejected += SpeechRecognitionRejected;
+            }
+            else
+                return false;
+            return true;
+        }
+
+        private void speechMicEngine_SpeechRecognitionRejected(object sender, System.Speech.Recognition.SpeechRecognitionRejectedEventArgs e)
+        {
+            invokeAddLog("Texte non reconnu : " + e.Result.Text);
         }
 
         public void disableRecognition()
@@ -140,15 +160,20 @@ namespace VoiceServer
 
         private void speechMicEngine_SpeechRecognized(object sender, System.Speech.Recognition.SpeechRecognizedEventArgs e)
         {
-            instances.ClassParam.log("J'ai entendu : " + e.Result.Text);
+            invokeAddLog("J'ai entendu : " + e.Result.Text);
             const double ConfidenceThreshold = 0.3;
             if (e.Result.Confidence >= ConfidenceThreshold)
                 traiteEcoute(e.Result.Text);
         }
 
+        private void SpeechRecognitionRejected(object sender, SpeechRecognitionRejectedEventArgs e)
+        {
+            invokeAddLog("Texte non reconnu : " + e.Result.Text);
+        }
+
         private void SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
         {
-            instances.ClassParam.log("J'ai entendu : " + e.Result.Text);
+            invokeAddLog("J'ai entendu : " + e.Result.Text);
             // Speech utterance confidence below which we treat speech as if it hadn't been heard
             const double ConfidenceThreshold = 0.3;
             if (e.Result.Confidence >= ConfidenceThreshold)
@@ -175,14 +200,14 @@ namespace VoiceServer
                     instances.ClassParam.tpm.addJob(_coupe_Tick, null, instances.ClassParam.timeToWait);
                     _jecoute = true;
                     if (!p.execute(textComplet.Trim().ToLower()))
-                        instances.ClassParam.log("Erreur pendant l'exécution du script");
+                        invokeAddLog("Erreur pendant l'exécution du script");
                 }
             }
         }
 
         private void _coupe_Tick(object param)
         {
-            instances.ClassParam.log("Je n'écoute plus tes ordres");
+            invokeAddLog("Je n'écoute plus tes ordres");
             _jecoute = false;
         }
 
@@ -224,6 +249,22 @@ namespace VoiceServer
                     }
                 }
 
+                // Add dictation engine
+                if (sensor == null)
+                {
+                    System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
+                    gb.AppendDictation();
+                    System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
+                }
+                else
+                {
+                    Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
+                    gb.AppendDictation();
+                    Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
+                }
+
                 setNPlugins(instances.ListOfPlugins.getInstance().nbPlugins());
                 allLines = System.IO.File.ReadAllLines(System.Environment.CurrentDirectory + "\\config.ini");
                 if (allLines != null)
@@ -260,7 +301,7 @@ namespace VoiceServer
             }
             catch (Exception e)
             {
-                instances.ClassParam.log(e.Message + "\r\n" + e.StackTrace + "\r\n");
+                invokeAddLog(e.Message + "\r\n" + e.StackTrace + "\r\n");
             }
         }
 
@@ -283,6 +324,7 @@ namespace VoiceServer
         private void addLog(string texte)
         {
             rapport.AppendText(texte + "\r\n");
+            instances.ClassParam.log(texte);
         }
 
         public void invokeAddLog(string texte)
@@ -302,15 +344,17 @@ namespace VoiceServer
         private void btnStop_Click(object sender, EventArgs e)
         {
             disableRecognition();
-            instances.ClassParam.log("Désactive reconnaissance vocale");
+            invokeAddLog("Désactive reconnaissance vocale");
             instances.SpeechSystem.getInstance().textToSpeech.Speak("Désactive reconnaissance vocale");
         }
 
         private void btnStart_Click(object sender, EventArgs e)
         {
-            enableRecognition();
-            instances.ClassParam.log("Active reconnaissance vocale");
-            instances.SpeechSystem.getInstance().textToSpeech.Speak("Active reconnaissance vocale");
+            if (enableRecognition())
+            {
+                invokeAddLog("Active reconnaissance vocale");
+                instances.SpeechSystem.getInstance().textToSpeech.Speak("Active reconnaissance vocale");
+            }
         }
 
         private void btnReload_Click(object sender, EventArgs e)
@@ -325,7 +369,7 @@ namespace VoiceServer
                 instances.SpeechSystem.getInstance().speechEngine.UnloadAllGrammars();
                 loadPlugins();
             }
-            instances.ClassParam.log("Rechargement ok");
+            invokeAddLog("Rechargement ok");
             instances.SpeechSystem.getInstance().textToSpeech.Speak("Rechargement effectué");
         }
 

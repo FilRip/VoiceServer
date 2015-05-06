@@ -19,13 +19,9 @@ namespace VoiceServer.instances
             string dir;
             dir = System.Environment.CurrentDirectory + "\\logs";
             if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
-            if (_mf!=null)
-            {
-                _mf.invokeAddLog(texte);
-            }
             try
             {
-                System.IO.File.AppendAllText(dir + "\\VoiceServer_" + System.DateTime.Now.Day.ToString("00") + "-" + System.DateTime.Now.Month.ToString("00") + "-" + System.DateTime.Now.Year.ToString("0000") /*+ "_" + System.DateTime.Now.Hour.ToString() + "-" + System.DateTime.Now.Minute.ToString()*/ + ".txt", texte + "\r\n");
+                System.IO.File.AppendAllText(dir + "\\VoiceServer_" + System.DateTime.Now.Day.ToString("00") + "-" + System.DateTime.Now.Month.ToString("00") + "-" + System.DateTime.Now.Year.ToString("0000") /*+ "_" + System.DateTime.Now.Hour.ToString() + "-" + System.DateTime.Now.Minute.ToString()*/ + ".txt", System.DateTime.Now.Hour.ToString("00") + ":" + System.DateTime.Now.Minute.ToString("00") + ":" + System.DateTime.Now.Second.ToString("00") + " " + texte + "\r\n");
             }
             catch { }
         }
