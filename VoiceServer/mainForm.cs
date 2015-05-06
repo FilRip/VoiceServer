@@ -19,6 +19,7 @@ namespace VoiceServer
         public KinectSensor sensor;
         private bool _jecoute;
         private int _numThreadListening;
+        private bool _quitter;
 
         public mainForm()
         {
@@ -294,6 +295,7 @@ namespace VoiceServer
 
         private void mainForm_Shown(object sender, EventArgs e)
         {
+            sysTray.Visible = true;
             init();
         }
 
@@ -325,6 +327,26 @@ namespace VoiceServer
             }
             instances.ClassParam.log("Rechargement ok");
             instances.SpeechSystem.getInstance().textToSpeech.Speak("Rechargement effectué");
+        }
+
+        private void mainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!_quitter)
+            {
+                e.Cancel = true;
+                Hide();
+            }
+        }
+
+        private void btnQuit_Click(object sender, EventArgs e)
+        {
+            _quitter = true;
+            Close();
+        }
+
+        private void sysTray_DoubleClick(object sender, EventArgs e)
+        {
+            Show();
         }
     }
 }
