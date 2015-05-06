@@ -52,7 +52,7 @@ namespace VoiceServer
                     }
                     catch (IOException)
                     {
-                        instances.ClassParam.log("Some other application is streaming from the same Kinect sensor");
+                        instances.ClassParam.log("Some others applications is streaming from the same Kinect sensor");
                         sensor = null;
                     }
                 }
@@ -325,6 +325,6 @@ namespace VoiceServer
             }
             instances.ClassParam.log("Rechargement ok");
             instances.SpeechSystem.getInstance().textToSpeech.Speak("Rechargement effectué");
-        } 
+        }
     }
 }

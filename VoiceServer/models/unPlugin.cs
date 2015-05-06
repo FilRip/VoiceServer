@@ -124,7 +124,7 @@ namespace VoiceServer.models
                                 _listeReferences.Add(phrase.Trim().ToLower());
                         }
                         else if (ligne.ToLower().Trim().StartsWith("keypress="))
-                            _touche = ligne.Trim().Substring(9).Replace("<enter>", "\r\n");
+                            _touche = ligne.Trim().Substring(9).Replace("<enter>", "\r\n").Replace("<space>", " ");
                         else if (ligne.ToLower().Trim().StartsWith("speak="))
                             _speak = ligne.ToLower().Trim().Substring(6);
                         else if (ligne.ToLower().Trim().StartsWith("execute="))
