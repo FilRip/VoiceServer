@@ -32,37 +32,42 @@ namespace VoiceServer
             instances.ClassParam.timeToWait = 5000;
             instances.SpeechSystem.getInstance().vitesseSyntheseVocale = 1;
             instances.SpeechSystem.getInstance().volumeSyntheseVocale = 100;
-            try
-            {
-                foreach (var potentialSensor in KinectSensor.KinectSensors)
-                {
-                    if (potentialSensor.Status == KinectStatus.Connected)
-                    {
-                        sensor = potentialSensor;
-                        break;
-                    }
-                    else
-                        throw new Exception("Etat du Kinect non pret : " + potentialSensor.Status.ToString());
-                }
+            loadConfig();
 
-                if (sensor != null)
+            if (instances.ClassParam.kinect)
+            {
+                try
                 {
-                    try
+                    foreach (var potentialSensor in KinectSensor.KinectSensors)
                     {
-                        // Start the sensor!
-                        sensor.Start();
+                        if (potentialSensor.Status == KinectStatus.Connected)
+                        {
+                            sensor = potentialSensor;
+                            break;
+                        }
+                        else
+                            throw new Exception("Etat du Kinect non pret : " + potentialSensor.Status.ToString());
                     }
-                    catch (IOException)
+
+                    if (sensor != null)
                     {
-                        invokeAddLog("Some others applications is streaming from the same Kinect sensor");
-                        sensor = null;
+                        try
+                        {
+                            // Start the sensor!
+                            sensor.Start();
+                        }
+                        catch (IOException)
+                        {
+                            invokeAddLog("Some others applications is streaming from the same Kinect sensor");
+                            sensor = null;
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                invokeAddLog("Pas de Kinect?");
-                invokeAddLog(ex.Message);
+                catch (Exception ex)
+                {
+                    invokeAddLog("Pas de Kinect?");
+                    invokeAddLog(ex.Message);
+                }
             }
 
             if (sensor == null)
@@ -71,6 +76,7 @@ namespace VoiceServer
                     invokeAddLog("Aucun Kinect branché");
                 invokeAddLog("Pas de Kinect");
                 invokeAddLog("On passe en mode micro");
+                instances.ClassParam.kinect = false;
                 instances.SpeechSystem.getInstance().speechMicEngine = new System.Speech.Recognition.SpeechRecognitionEngine(new System.Globalization.CultureInfo("fr-FR"));
                 try
                 {
@@ -84,9 +90,9 @@ namespace VoiceServer
             }
             else
             {
-                instances.ClassParam.kinect = true;
                 invokeAddLog("Kinect activé");
                 RecognizerInfo ri = GetKinectRecognizer();
+                instances.ClassParam.kinect = true;
 
                 if (ri != null)
                 {
@@ -214,7 +220,6 @@ namespace VoiceServer
         private void loadPlugins()
         {
             models.unPlugin p;
-            string[] allLines;
 
             try
             {
@@ -246,63 +251,66 @@ namespace VoiceServer
                                     instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
                                 }
                             }
+                        p.preCharge();
                     }
                 }
 
                 // Add dictation engine
-                if (sensor == null)
+                if (!instances.ClassParam.kinect)
                 {
                     System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
                     gb.AppendDictation();
                     System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
                     instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
                 }
+
+                if (sensor == null)
+                {
+                    System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
+                    gb.Append(new System.Speech.Recognition.SemanticResultKey("root", instances.ClassParam.nomMachine));
+                    System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
+                }
                 else
                 {
                     Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
-                    gb.AppendDictation();
+                    gb.Append(new Microsoft.Speech.Recognition.SemanticResultKey("root", instances.ClassParam.nomMachine));
                     Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
                     instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
                 }
 
                 setNPlugins(instances.ListOfPlugins.getInstance().nbPlugins());
-                allLines = System.IO.File.ReadAllLines(System.Environment.CurrentDirectory + "\\config.ini");
-                if (allLines != null)
-                    foreach (string ligne in allLines)
-                    {
-                        if (ligne.ToLower().StartsWith("name="))
-                        {
-                            instances.ClassParam.nomMachine = ligne.Substring(5);
-                            if (sensor == null)
-                            {
-                                System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
-                                gb.Append(new System.Speech.Recognition.SemanticResultKey("root", instances.ClassParam.nomMachine));
-                                System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
-                                instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
-                                //instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(new System.Speech.Recognition.DictationGrammar());
-                            }
-                            else
-                            {
-                                Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
-                                gb.Append(new Microsoft.Speech.Recognition.SemanticResultKey("root", instances.ClassParam.nomMachine));
-                                Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
-                                instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
-                            }
-                        }
-                        else if (ligne.ToLower().StartsWith("answer="))
-                            instances.ClassParam.reponse = ligne.Substring(7);
-                        else if (ligne.ToLower().StartsWith("timetolistening="))
-                            instances.ClassParam.lireTempsAttente(ligne.Trim().Substring(16));
-                        else if (ligne.ToLower().StartsWith("vitessesynthesevocale="))
-                            instances.SpeechSystem.getInstance().vitesseSyntheseVocale = int.Parse(ligne.Substring(22));
-                        else if (ligne.ToLower().StartsWith("volumesynthesevocale="))
-                            instances.SpeechSystem.getInstance().volumeSyntheseVocale = int.Parse(ligne.Substring(21));
-                    }
             }
             catch (Exception e)
             {
                 invokeAddLog(e.Message + "\r\n" + e.StackTrace + "\r\n");
             }
+        }
+
+        private void loadConfig()
+        {
+            string[] allLines;
+            allLines = System.IO.File.ReadAllLines(System.Environment.CurrentDirectory + "\\config.ini");
+            if (allLines != null)
+                foreach (string ligne in allLines)
+                {
+                    if (ligne.ToLower().StartsWith("name="))
+                        instances.ClassParam.nomMachine = ligne.Substring(5);
+                    else if (ligne.ToLower().StartsWith("answer="))
+                        instances.ClassParam.reponse = ligne.Substring(7);
+                    else if (ligne.ToLower().StartsWith("timetolistening="))
+                        instances.ClassParam.lireTempsAttente(ligne.Trim().Substring(16));
+                    else if (ligne.ToLower().StartsWith("vitessesynthesevocale="))
+                        instances.SpeechSystem.getInstance().vitesseSyntheseVocale = int.Parse(ligne.Substring(22));
+                    else if (ligne.ToLower().StartsWith("volumesynthesevocale="))
+                        instances.SpeechSystem.getInstance().volumeSyntheseVocale = int.Parse(ligne.Substring(21));
+                    else if (ligne.ToLower().StartsWith("kinect="))
+                    {
+                        bool dummy;
+                        bool.TryParse(ligne.Substring(7), out dummy);
+                        instances.ClassParam.kinect = dummy;
+                    }
+                }
         }
 
         private RecognizerInfo GetKinectRecognizer()

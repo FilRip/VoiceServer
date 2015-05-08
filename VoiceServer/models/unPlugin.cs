@@ -174,62 +174,7 @@ namespace VoiceServer.models
                         instances.ClassParam.log("Erreur pendant l'envoi de la requête http");
                         return false;
                     }
-
-                if (_scriptFile == "") return true;
-
-                System.CodeDom.Compiler.CompilerResults cr;
-                List<string> listeReference = new List<string>();
-                System.Reflection.MethodInfo method;
-
-                listeReference.Add("CB.Reseaux.dll");
-                listeReference.Add("CB.Threading.dll");
-                listeReference.Add("Microsoft.Speech.dll");
-                listeReference.Add("Microsoft.Kinect.dll");
-
-                if ((_listeReferences != null) && (_listeReferences.Count > 0))
-                {
-                    foreach (string refAssembly in _listeReferences)
-                    listeReference.Add(refAssembly);
-                }
-
-                if (System.IO.Path.GetExtension(_scriptFile) == ".vb")
-                {
-                    CB.Interpreters.scriptVBNET a = new CB.Interpreters.scriptVBNET();
-                    cr = a.interpreteFichier(_fullPath + "\\" + _scriptFile, listeReference);
-                }
-                else
-                {
-                    CB.Interpreters.scriptCsharpNET a = new CB.Interpreters.scriptCsharpNET();
-                    cr = a.interpreteFichier(_fullPath + "\\" + _scriptFile, listeReference);
-                }
-
-                if (cr.Errors.Count > 0)
-                {
-                    try
-                    {
-                        System.IO.File.Delete(_fullPath + "\\" + _scriptFile + ".log");
-                    }
-                    catch { }
-                    foreach (System.CodeDom.Compiler.CompilerError Err in cr.Errors)
-                    {
-                        System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Error number : " + Err.ErrorNumber + "\r\n");
-                        System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Error text : " + Err.ErrorText + "\r\n");
-                        System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Line number : " + Err.Line.ToString() + "\r\n");
-                        System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "\r\n");
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (cr != null)
-                    {
-                        object obj;
-                        obj = cr.CompiledAssembly.CreateInstance(_mainClass);
-                        method = obj.GetType().GetMethod(_mainMethod);
-                        method.Invoke(obj, new object[] { phrase });
-                    }
-                }
-                return true;
+                executeMethode(phrase, _mainMethod);
             }
             catch (Exception e)
             {
@@ -245,6 +190,73 @@ namespace VoiceServer.models
                     if (p.Trim().ToLower() == phrase.Trim().ToLower())
                         return true;
             return false;
+        }
+
+        public bool executeMethode(string phrase, string methode)
+        {
+            if (_scriptFile == "") return true;
+
+            System.CodeDom.Compiler.CompilerResults cr;
+            List<string> listeReference = new List<string>();
+            System.Reflection.MethodInfo method;
+
+            listeReference.Add("CB.Reseaux.dll");
+            listeReference.Add("CB.Threading.dll");
+            listeReference.Add("Microsoft.Speech.dll");
+            listeReference.Add("Microsoft.Kinect.dll");
+
+            if ((_listeReferences != null) && (_listeReferences.Count > 0))
+            {
+                foreach (string refAssembly in _listeReferences)
+                    listeReference.Add(refAssembly);
+            }
+
+            if (System.IO.Path.GetExtension(_scriptFile) == ".vb")
+            {
+                CB.Interpreters.scriptVBNET a = new CB.Interpreters.scriptVBNET();
+                cr = a.interpreteFichier(_fullPath + "\\" + _scriptFile, listeReference);
+            }
+            else
+            {
+                CB.Interpreters.scriptCsharpNET a = new CB.Interpreters.scriptCsharpNET();
+                cr = a.interpreteFichier(_fullPath + "\\" + _scriptFile, listeReference);
+            }
+
+            if (cr.Errors.Count > 0)
+            {
+                try
+                {
+                    System.IO.File.Delete(_fullPath + "\\" + _scriptFile + ".log");
+                }
+                catch { }
+                foreach (System.CodeDom.Compiler.CompilerError Err in cr.Errors)
+                {
+                    System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Error number : " + Err.ErrorNumber + "\r\n");
+                    System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Error text : " + Err.ErrorText + "\r\n");
+                    System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "Line number : " + Err.Line.ToString() + "\r\n");
+                    System.IO.File.AppendAllText(_fullPath + "\\" + _scriptFile + ".log", "\r\n");
+                    return false;
+                }
+            }
+            else
+            {
+                if (cr != null)
+                {
+                    object obj;
+                    obj = cr.CompiledAssembly.CreateInstance(_mainClass);
+                    method = obj.GetType().GetMethod(methode);
+                    if (methode==_mainMethod)
+                        method.Invoke(obj, new object[] { phrase });
+                    else
+                        method.Invoke(obj,null);
+                }
+            }
+            return true;
+        }
+
+        public bool preCharge(string phrase)
+        {
+            return executeMethode("", "preLoad");
         }
     }
 }
