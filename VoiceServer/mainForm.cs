@@ -20,6 +20,7 @@ namespace VoiceServer
         private bool _jecoute;
         private int _numThreadListening;
         private bool _quitter;
+        private bool _secondOrdre;
 
         public mainForm()
         {
@@ -192,23 +193,40 @@ namespace VoiceServer
             {
                 instances.SpeechSystem.getInstance().textToSpeech.SpeakAsync(instances.ClassParam.reponse);
                 instances.ClassParam.log("J'écoute tes ordres");
-                instances.ClassParam.tpm.stopJob(_numThreadListening);
-                _numThreadListening = instances.ClassParam.tpm.addJob(_coupe_Tick, null, instances.ClassParam.timeToWait);
+                RelanceAttente();
                 _jecoute = true;
             }
             else if (_jecoute)
             {
-                models.unPlugin p;
-                p = instances.ListOfPlugins.getInstance().returnPluginPhrase(textComplet);
-                if (p != null)
+                if (_secondOrdre)
                 {
-                    instances.ClassParam.tpm.stopJob(_numThreadListening);
-                    instances.ClassParam.tpm.addJob(_coupe_Tick, null, instances.ClassParam.timeToWait);
-                    _jecoute = true;
-                    if (!p.execute(textComplet.Trim().ToLower()))
-                        invokeAddLog("Erreur pendant l'exécution du script");
+                    plugins.watching.getInstance().traitement(textComplet);
+                    _secondOrdre = false;
+                }
+                else
+                {
+                    models.unPlugin p;
+                    p = instances.ListOfPlugins.getInstance().returnPluginPhrase(textComplet);
+                    if (p != null)
+                    {
+                        RelanceAttente();
+                        _jecoute = true;
+                        if (!p.execute(textComplet.Trim().ToLower()))
+                            invokeAddLog("Erreur pendant l'exécution du script");
+                    }
+                    else if (textComplet.IndexOf(plugins.watching.PHRASE) >= 0)
+                    {
+                        instances.SpeechSystem.getInstance().textToSpeech.SpeakAsync("quel film ?");
+                        _secondOrdre = true;
+                    }
                 }
             }
+        }
+
+        private void RelanceAttente()
+        {
+            instances.ClassParam.tpm.stopJob(_numThreadListening);
+            _numThreadListening = instances.ClassParam.tpm.addJob(_coupe_Tick, null, instances.ClassParam.timeToWait);
         }
 
         private void _coupe_Tick(object param)
@@ -264,6 +282,7 @@ namespace VoiceServer
                     instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
                 }
 
+                // Ajoute la reconnaissance vocale du nom donné a cet assistant
                 if (sensor == null)
                 {
                     System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
@@ -275,6 +294,23 @@ namespace VoiceServer
                 {
                     Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
                     gb.Append(new Microsoft.Speech.Recognition.SemanticResultKey("root", instances.ClassParam.nomMachine));
+                    Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
+                }
+
+                //Plugins ouverture de fichier
+                plugins.watching.getInstance().rafraichir();
+                if (sensor == null)
+                {
+                    System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
+                    gb.Append(new System.Speech.Recognition.SemanticResultKey("root", plugins.watching.PHRASE));
+                    System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
+                }
+                else
+                {
+                    Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
+                    gb.Append(new Microsoft.Speech.Recognition.SemanticResultKey("root", plugins.watching.PHRASE));
                     Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
                     instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
                 }

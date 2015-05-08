@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MyFolder.instances
+namespace VoiceServer.instances
 {
     class ListeDesRepertoires
     {
