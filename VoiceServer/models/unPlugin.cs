@@ -245,10 +245,11 @@ namespace VoiceServer.models
                     object obj;
                     obj = cr.CompiledAssembly.CreateInstance(_mainClass);
                     method = obj.GetType().GetMethod(methode);
-                    if (methode==_mainMethod)
-                        method.Invoke(obj, new object[] { phrase });
-                    else
-                        method.Invoke(obj,null);
+                    if (method!=null)
+                        if (methode==_mainMethod)
+                            method.Invoke(obj, new object[] { phrase });
+                        else
+                            method.Invoke(obj,null);
                 }
             }
             return true;
