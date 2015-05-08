@@ -254,7 +254,7 @@ namespace VoiceServer.models
             return true;
         }
 
-        public bool preCharge(string phrase)
+        public bool preCharge()
         {
             return executeMethode("", "preLoad");
         }

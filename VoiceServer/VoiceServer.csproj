@@ -96,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="instances\ClassParam.cs" />
+    <Compile Include="instances\ListeDesRepertoires.cs" />
     <Compile Include="instances\ListOfPlugins.cs" />
     <Compile Include="mainForm.cs">
       <SubType>Form</SubType>
