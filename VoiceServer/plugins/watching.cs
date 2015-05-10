@@ -7,9 +7,9 @@ namespace VoiceServer.plugins
 {
     class watching
     {
-        private List<string> fichiers;
+        private List<string> _fichiers;
         private static watching _instance;
-        public const string PHRASE="regarder film";
+        public const string PHRASE = "regarder film";
 
         public static watching getInstance()
         {
@@ -24,8 +24,8 @@ namespace VoiceServer.plugins
             allLines = System.IO.File.ReadAllLines(System.Environment.CurrentDirectory + "\\watching.ini");
             foreach (string line in allLines)
                 instances.ListeDesRepertoires.getInstance().addItem(line);
-            if (fichiers == null) fichiers = new List<string>();
-            fichiers.Clear();
+            if (_fichiers == null) _fichiers = new List<string>();
+            _fichiers.Clear();
             foreach (string rep in instances.ListeDesRepertoires.getInstance().retourneListe())
                 if (System.IO.Directory.Exists(rep)) boucleSousRepertoire(rep); else System.Windows.Forms.MessageBox.Show("Le répertoire\r\n" + rep + "\r\nn'exite pas/plus.");
         }
@@ -36,7 +36,7 @@ namespace VoiceServer.plugins
             {
                 foreach (string fichier in System.IO.Directory.GetFiles(rep))
                 {
-                    fichiers.Add(fichier);
+                    _fichiers.Add(fichier);
                 }
                 foreach (string eachRep in System.IO.Directory.GetDirectories(rep))
                     boucleSousRepertoire(eachRep);
@@ -49,8 +49,9 @@ namespace VoiceServer.plugins
             string[] mots;
             int nbMot;
 
+            if (phrase == "") return;
             mots = phrase.Replace(PHRASE, "").Split(' ');
-            foreach (string fichier in fichiers)
+            foreach (string fichier in _fichiers)
             {
                 nbMot=0;
                 foreach (string mot in mots)

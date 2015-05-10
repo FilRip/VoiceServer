@@ -21,6 +21,12 @@ namespace VoiceServer
         private int _numThreadListening;
         private bool _quitter;
         private bool _secondOrdre;
+        private enum ORDRE_PLUGINS
+        {
+            WATCHING,
+            SURF
+        }
+        private ORDRE_PLUGINS _pluginsEnAction;
 
         public mainForm()
         {
@@ -189,6 +195,8 @@ namespace VoiceServer
 
         private void traiteEcoute(string textComplet)
         {
+            if (textComplet.Trim()=="") return;
+
             if ((!_jecoute) && (textComplet.ToLower().Trim() == instances.ClassParam.nomMachine.Trim().ToLower()))
             {
                 instances.SpeechSystem.getInstance().textToSpeech.SpeakAsync(instances.ClassParam.reponse);
@@ -200,7 +208,8 @@ namespace VoiceServer
             {
                 if (_secondOrdre)
                 {
-                    plugins.watching.getInstance().traitement(textComplet);
+                    if (_pluginsEnAction == ORDRE_PLUGINS.WATCHING) plugins.watching.getInstance().traitement(textComplet);
+                    if (_pluginsEnAction == ORDRE_PLUGINS.SURF) plugins.surf.getInstance().traitement(textComplet);
                     _secondOrdre = false;
                 }
                 else
@@ -218,6 +227,15 @@ namespace VoiceServer
                     {
                         instances.SpeechSystem.getInstance().textToSpeech.SpeakAsync("quel film ?");
                         _secondOrdre = true;
+                        _pluginsEnAction = ORDRE_PLUGINS.WATCHING;
+                        RelanceAttente();
+                    }
+                    else if (textComplet.IndexOf(plugins.surf.PHRASE) >= 0)
+                    {
+                        instances.SpeechSystem.getInstance().textToSpeech.SpeakAsync("quel site ?");
+                        _secondOrdre = true;
+                        _pluginsEnAction = ORDRE_PLUGINS.SURF;
+                        RelanceAttente();
                     }
                 }
             }
@@ -315,6 +333,22 @@ namespace VoiceServer
                     instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
                 }
 
+                //Plugins surf sur internet
+                plugins.surf.getInstance().rafraichir();
+                if (sensor == null)
+                {
+                    System.Speech.Recognition.GrammarBuilder gb = new System.Speech.Recognition.GrammarBuilder();
+                    gb.Append(new System.Speech.Recognition.SemanticResultKey("root", plugins.surf.PHRASE));
+                    System.Speech.Recognition.Grammar g3 = new System.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechMicEngine.LoadGrammar(g3);
+                }
+                else
+                {
+                    Microsoft.Speech.Recognition.GrammarBuilder gb = new Microsoft.Speech.Recognition.GrammarBuilder();
+                    gb.Append(new Microsoft.Speech.Recognition.SemanticResultKey("root", plugins.surf.PHRASE));
+                    Microsoft.Speech.Recognition.Grammar g3 = new Microsoft.Speech.Recognition.Grammar(gb);
+                    instances.SpeechSystem.getInstance().speechEngine.LoadGrammar(g3);
+                }
                 setNPlugins(instances.ListOfPlugins.getInstance().nbPlugins());
             }
             catch (Exception e)
