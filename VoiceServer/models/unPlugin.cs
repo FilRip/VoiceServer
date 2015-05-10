@@ -174,7 +174,7 @@ namespace VoiceServer.models
                         instances.ClassParam.log("Erreur pendant l'envoi de la requête http");
                         return false;
                     }
-                executeMethode(phrase, _mainMethod);
+                return executeMethode(phrase, _mainMethod);
             }
             catch (Exception e)
             {
